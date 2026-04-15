@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<ruleset name="Quiz API">
+    <rule ref="PSR12"/>
+    <file>src</file>
+    <file>public</file>
+    <arg name="colors"/>
+    <arg value="sp"/>
+</ruleset>

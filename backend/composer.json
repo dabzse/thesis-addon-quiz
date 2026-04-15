@@ -1,0 +1,26 @@
+{
+    "name": "dabzse/thesis-addon-quiz-backend",
+    "description": "quiz addon for thesis",
+    "scripts": {
+        "test": "php tests/run.php"
+    },
+    "require-dev": {
+        "squizlabs/php_codesniffer": "^4.0"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Quiz\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Mihaly Nyilas",
+            "email": "dr.dabzse@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "phpmailer/phpmailer": "*"
+    }
+}
