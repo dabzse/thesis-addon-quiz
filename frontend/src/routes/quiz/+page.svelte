@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { fetchCategories } from '$lib/api';
     import { userData } from '$lib/user';
     import type { Category } from '$lib/types';
@@ -12,11 +13,12 @@
 
     const selectedYear = new Date().getFullYear();
 
+    // If no ticket, redirect to home
     // Ha nincs belépőjegy, vissza a főoldalra
     onMount(async () => {
         const user = get(userData);
         if (!user.ticket) {
-            goto('/');
+            goto(`${resolve('/')}`);
             return;
         }
 
@@ -43,7 +45,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-3xl">
             {#each categories as category (category.id)}
                 <a
-                    href="/quiz/{category.slug}"
+                    href="{resolve('/')}quiz/{category.slug}"
                     data-sveltekit-preload-data="hover"
                     class="bg-white rounded-2xl shadow p-6 hover:shadow-md hover:bg-indigo-50 transition text-center"
                 >
@@ -52,11 +54,11 @@
             {/each}
 
             <a
-                href="/quiz/random"
+                href="{resolve('/')}quiz/random"
                 data-sveltekit-preload-data="hover"
                 class="bg-indigo-600 rounded-2xl shadow p-6 hover:bg-indigo-700 transition text-center"
             >
-                <h2 class="text-xl font-semibond text-white">🎲 Véletlenszerű</h2>
+                <h2 class="text-xl font-semibold text-white">🎲 Véletlenszerű</h2>
             </a>
         </div>
     {/if}

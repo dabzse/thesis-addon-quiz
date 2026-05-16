@@ -8,25 +8,33 @@ use Quiz\Controllers\AuthController;
 use Quiz\Controllers\QuizController;
 use Quiz\Controllers\SettingsController;
 
+// Load .env file
 // .env betöltése
-$env = parse_ini_file(__DIR__ . '/../.env');
-
-foreach ($env as $key => $value) {
-    $_ENV[$key] = $value;
+$envFile = __DIR__ . '/../.env';
+if (file_exists($envFile)) {
+    $env = parse_ini_file($envFile);
+    if (is_array($env)) {
+        foreach ($env as $key => $value) {
+            $_ENV[$key] = $value;
+        }
+    }
 }
 
 // Headers
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: http://localhost:5173');
+$corsOrigin = $_ENV['CORS_ORIGIN'] ?? 'http://localhost:5173';
+header("Access-Control-Allow-Origin: {$corsOrigin}");
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
+// Handle OPTIONS preflight requests
 // OPTIONS preflight kezelése
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
     exit;
 }
 
+// Parse request URL
 // URL feldolgozása
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $uri = trim($uri, '/');
@@ -37,6 +45,7 @@ $authController = new AuthController();
 $controller = new QuizController();
 $settingsController = new SettingsController();
 
+// Admin endpoints — token validation
 // Admin végpontok — token ellenőrzés
 $isAdmin =
     count($segments) >= 2 &&
@@ -62,7 +71,7 @@ match (true) {
         && ctype_digit($segments[2])
         => $controller->getCategory((int) $segments[2]),
 
-    // GET /api/categories/php/questions (slug alapú)
+    // GET /api/categories/{slug}/questions
     $method === 'GET' && count($segments) === 4
         && $segments[0] === 'api'
         && $segments[1] === 'categories'
@@ -165,6 +174,14 @@ match (true) {
     // GET /api/admin/entries
     $method === 'GET' && $segments === ['api', 'admin', 'entries']
         => $controller->getEntries(),
+
+    // GET /api/tickets/check
+    $method === 'GET' && $segments === ['api', 'tickets', 'check']
+        => $controller->checkTicket(),
+
+    // POST /api/entries/email
+    $method === 'POST' && $segments === ['api', 'entries', 'email']
+        => $controller->sendEmailOnly(),
 
     default => (function () {
         http_response_code(404);

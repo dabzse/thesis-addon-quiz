@@ -1,6 +1,8 @@
 <script lang="ts">
+    import { Config } from '$lib/config';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/stores';
     import { authFetch } from '$lib/auth';
     import { fetchQuestionTypes } from '$lib/api';
@@ -30,13 +32,13 @@
 
     onMount(async () => {
         try {
-            const cats = await fetch('http://localhost:8000/api/categories').then(r => r.json());
+            const cats = await fetch(`${Config.API_URL}/categories`).then(r => r.json());
             categories = cats;
 
             const types = await fetchQuestionTypes();
             questionTypes = types;
 
-            const qRes = await authFetch(`http://localhost:8000/api/questions/${id}`);
+            const qRes = await authFetch(`${Config.API_URL}/questions/${id}`);
             const data = await qRes.json();
 
             categoryId = String(data.category_id);
@@ -58,7 +60,7 @@
                 correct_position: a.correct_position,
                 match_answer: a.match_answer,
             })).sort((a: Answer, b: Answer) => (a.correct_position ?? 0) - (b.correct_position ?? 0));
-        } catch (e) {
+        } catch {
             error = 'Nem sikerült betölteni a kérdést.';
         } finally {
             pageLoading = false;
@@ -115,9 +117,9 @@
         error = '';
 
         try {
-            const res = await authFetch(`http://localhost:8000/api/admin/questions/${id}`, {
+            const res = await authFetch(`${Config.API_URL}/admin/questions/${id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: Config.APP_JSON,
                 body: JSON.stringify({
                     category_id: Number(categoryId),
                     question: question.trim(),
@@ -132,8 +134,8 @@
                 return;
             }
 
-            goto('/admin/questions');
-        } catch (e) {
+            goto(`${resolve('/')}admin/questions`);
+        } catch {
             error = 'Nem sikerült menteni.';
         } finally {
             loading = false;
@@ -143,7 +145,7 @@
 
 <main class="p-8 max-w-2xl mx-auto">
     <div class="flex items-center gap-4 mb-8">
-        <a href="/admin/questions" class="text-indigo-600 hover:underline text-sm">← Vissza</a>
+        <a href="{resolve('/')}admin/questions" class="text-indigo-600 hover:underline text-sm">← Vissza</a>
         <h1 class="text-2xl font-bold text-gray-800">Kérdés szerkesztése</h1>
     </div>
 
@@ -153,8 +155,9 @@
         <div class="bg-white rounded-2xl shadow p-8 flex flex-col gap-6">
 
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">Kategória</label>
+                <label for="category-select" class="text-sm font-medium text-gray-700">Kategória</label>
                 <select
+                    id="category-select"
                     bind:value={categoryId}
                     class="border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-300"
                 >
@@ -166,7 +169,7 @@
             </div>
 
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">Kérdés típusa</label>
+                <span class="text-sm font-medium text-gray-700">Kérdés típusa</span>
                 <div class="flex flex-wrap gap-4">
                     {#each questionTypes as qt (qt.id)}
                         <label class="flex items-center gap-2 cursor-pointer">
@@ -178,17 +181,19 @@
             </div>
 
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">Kérdés szövege</label>
+                <label for="question-text" class="text-sm font-medium text-gray-700">Kérdés szövege</label>
                 <textarea
+                    id="question-text"
                     bind:value={question}
                     rows="3"
                     placeholder="Írd be a kérdést..."
                     class="border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"
-                ></textarea>
+                >
+                </textarea>
             </div>
 
             <div class="flex flex-col gap-3">
-                <label class="text-sm font-medium text-gray-700">
+                <span class="text-sm font-medium text-gray-700">
                     {#if selectedType?.name === 'ordering'}
                         Elemek helyes sorrendben
                     {:else if selectedType?.name === 'matching'}
@@ -196,7 +201,7 @@
                     {:else}
                         Válaszok
                     {/if}
-                </label>
+                </span>
 
                 {#each answers as answer, i (i)}
                     <div class="flex items-center gap-3">

@@ -21,6 +21,12 @@ namespace Quiz\Controllers {
 namespace {
     require_once __DIR__ . '/../vendor/autoload.php';
 
+    const TEST_ADMIN_ID = 7;
+    const TEST_ADMIN_NAME = 'Admin';
+    const TEST_ADMIN_EMAIL = 'admin@example.com';
+    const TEST_ADMIN_PASS = 'secret';
+    const TEST_TOKEN = 'session-token';
+
     use Quiz\Controllers\AuthController;
     use Quiz\Models\Session;
     use Quiz\Models\User;
@@ -73,21 +79,20 @@ namespace {
     function assertTrue(bool $condition, string $message): void
     {
         if (!$condition) {
-            throw new \RuntimeException($message);
+            throw new \AssertionError($message);
         }
     }
 
     function assertSameValue(mixed $expected, mixed $actual, string $message): void
     {
         if ($expected !== $actual) {
-            throw new \RuntimeException($message . ' Expected: ' . var_export($expected, true) . ' Actual: ' . var_export($actual, true));
+            throw new \AssertionError($message . ' Expected: ' . var_export($expected, true) . ' Actual: ' . var_export($actual, true));
         }
     }
 
     function inject(object $object, string $property, mixed $value): void
     {
         $ref = new \ReflectionProperty($object, $property);
-        $ref->setAccessible(true);
         $ref->setValue($object, $value);
     }
 
@@ -135,31 +140,31 @@ namespace {
             $controller = makeController();
             $user = new FakeUser();
             $user->emailResult = [
-                'id' => 7,
-                'name' => 'Admin',
-                'email' => 'admin@example.com',
-                'password' => password_hash('secret', PASSWORD_DEFAULT),
+                'id' => TEST_ADMIN_ID,
+                'name' => TEST_ADMIN_NAME,
+                'email' => TEST_ADMIN_EMAIL,
+                'password' => password_hash(TEST_ADMIN_PASS, PASSWORD_DEFAULT),
             ];
             $session = new FakeSession();
-            $session->tokenToCreate = 'session-token';
+            $session->tokenToCreate = TEST_TOKEN;
 
             inject($controller, 'user', $user);
             inject($controller, 'session', $session);
-            setRequestContext([], json_encode(['email' => 'admin@example.com', 'password' => 'secret'], JSON_THROW_ON_ERROR));
+            setRequestContext([], json_encode(['email' => TEST_ADMIN_EMAIL, 'password' => TEST_ADMIN_PASS], JSON_THROW_ON_ERROR));
 
             [$status, $body] = runController(static fn () => $controller->login());
             $payload = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
 
             assertSameValue(200, $status, 'Login should succeed');
-            assertSameValue('session-token', $payload['token'], 'Login should return the session token');
-            assertSameValue('Admin', $payload['user']['name'], 'Login should return the user name');
-            assertSameValue(7, $session->createdForUserId, 'Login should create a session for the matched user');
+            assertSameValue(TEST_TOKEN, $payload['token'], 'Login should return the session token');
+            assertSameValue(TEST_ADMIN_NAME, $payload['user']['name'], 'Login should return the user name');
+            assertSameValue(TEST_ADMIN_ID, $session->createdForUserId, 'Login should create a session for the matched user');
         },
         'login rejects missing credentials' => function (): void {
             $controller = makeController();
             inject($controller, 'user', new FakeUser());
             inject($controller, 'session', new FakeSession());
-            setRequestContext([], json_encode(['email' => 'admin@example.com'], JSON_THROW_ON_ERROR));
+            setRequestContext([], json_encode(['email' => TEST_ADMIN_EMAIL], JSON_THROW_ON_ERROR));
 
             [$status, $body] = runController(static fn () => $controller->login());
             $payload = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
@@ -171,15 +176,15 @@ namespace {
             $controller = makeController();
             $user = new FakeUser();
             $user->emailResult = [
-                'id' => 7,
-                'name' => 'Admin',
-                'email' => 'admin@example.com',
-                'password' => password_hash('secret', PASSWORD_DEFAULT),
+                'id' => TEST_ADMIN_ID,
+                'name' => TEST_ADMIN_NAME,
+                'email' => TEST_ADMIN_EMAIL,
+                'password' => password_hash(TEST_ADMIN_PASS, PASSWORD_DEFAULT),
             ];
 
             inject($controller, 'user', $user);
             inject($controller, 'session', new FakeSession());
-            setRequestContext([], json_encode(['email' => 'admin@example.com', 'password' => 'wrong'], JSON_THROW_ON_ERROR));
+            setRequestContext([], json_encode(['email' => TEST_ADMIN_EMAIL, 'password' => 'wrong'], JSON_THROW_ON_ERROR));
 
             [$status, $body] = runController(static fn () => $controller->login());
             $payload = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
@@ -221,9 +226,9 @@ namespace {
 
             setRequestContext(['Authorization' => 'Bearer valid-token']);
             $session->findResult = [
-                'id' => 7,
-                'name' => 'Admin',
-                'email' => 'admin@example.com',
+                'id' => TEST_ADMIN_ID,
+                'name' => TEST_ADMIN_NAME,
+                'email' => TEST_ADMIN_EMAIL,
             ];
             assertTrue($controller->validateToken() === true, 'validateToken should succeed when the session exists');
         },

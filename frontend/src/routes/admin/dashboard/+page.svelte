@@ -1,5 +1,6 @@
 <script lang="ts">
     import { auth } from '$lib/auth';
+    import { resolve } from '$app/paths';
 </script>
 
 <main class="p-8 max-w-4xl mx-auto">
@@ -8,7 +9,7 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <a
-            href="/admin/questions"
+            href="{resolve('/')}admin/questions"
             class="bg-white rounded-2xl shadow p-6 hover:shadow-md hover:bg-indigo-50 transition"
         >
             <h2 class="text-lg font-semibold text-indigo-700 mb-1">Kérdések</h2>
@@ -16,7 +17,7 @@
         </a>
 
         <a
-            href="/admin/questions/new"
+            href="{resolve('/')}admin/questions/new"
             class="bg-indigo-600 rounded-2xl shadow p-6 hover:bg-indigo-700 transition"
         >
             <h2 class="text-lg font-semibold text-white mb-1">+ Új kérdés</h2>

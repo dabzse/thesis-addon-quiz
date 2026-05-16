@@ -60,4 +60,29 @@ class Entry
 
         return $stmt->fetchAll();
     }
+
+    public function updateUser(int $id, ?string $email, ?string $name): void
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE entries SET email = :email, name = :name WHERE id = :id'
+        );
+        $stmt->execute([
+            ':id'    => $id,
+            ':email' => $email,
+            ':name'  => $name,
+        ]);
+    }
+
+    public function hasEntry(string $ticketNumber, int $eventYear): bool
+    {
+        $stmt = $this->db->prepare(
+            'SELECT COUNT(id) FROM entries WHERE ticket_number = :ticket_number AND event_year = :event_year'
+        );
+        $stmt->execute([
+            ':ticket_number' => $ticketNumber,
+            ':event_year' => $eventYear
+        ]);
+
+        return (int) $stmt->fetchColumn() > 0;
+    }
 }

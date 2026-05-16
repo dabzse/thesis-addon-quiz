@@ -1,6 +1,8 @@
 <script lang="ts">
+    import { Config } from '$lib/config';
     import { onMount } from 'svelte';
     import { authFetch } from '$lib/auth';
+    import { resolve } from '$app/paths';
 
     interface Category {
         id: number;
@@ -29,9 +31,9 @@
 
     onMount(async () => {
         try {
-            const res = await authFetch('http://localhost:8000/api/admin/categories');
+            const res = await authFetch(`${Config.API_URL}/admin/categories`);
             categories = await res.json();
-        } catch (e) {
+        } catch {
             error = 'Nem sikerült betölteni a kategóriákat.';
         } finally {
             loading = false;
@@ -48,9 +50,9 @@
         newError = '';
 
         try {
-            const res = await authFetch('http://localhost:8000/api/admin/categories', {
+            const res = await authFetch(`${Config.API_URL}/admin/categories`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: Config.APP_JSON,
                 body: JSON.stringify({
                     name: newName.trim(),
                     slug: newSlug.trim() || slugify(newName.trim()),
@@ -68,7 +70,7 @@
             newName = '';
             newSlug = '';
             showNewCategory = false;
-        } catch (e) {
+        } catch {
             newError = 'Nem sikerült menteni.';
         } finally {
             newLoading = false;
@@ -92,9 +94,10 @@
             <h2 class="text-lg font-semibold text-gray-700">Új kategória</h2>
 
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">Név</label>
+                <label for="category-name" class="text-sm font-medium text-gray-700">Név</label>
                 <input
                     type="text"
+                    id="category-name"
                     bind:value={newName}
                     oninput={() => { newSlug = slugify(newName); }}
                     placeholder="Kategória neve"
@@ -103,9 +106,10 @@
             </div>
 
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">Slug</label>
+                <label for="category-slug" class="text-sm font-medium text-gray-700">Slug</label>
                 <input
                     type="text"
+                    id="category-slug"
                     bind:value={newSlug}
                     placeholder="kategoria-neve"
                     class="border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
@@ -142,7 +146,7 @@
                         <p class="text-sm text-gray-400">{cat.slug}</p>
                     </div>
                     <a
-                        href="/admin/categories/{cat.id}/edit"
+                        href="{resolve('/')}admin/categories/{cat.id}/edit"
                         class="text-sm text-indigo-600 hover:underline"
                     >
                         Szerkesztés

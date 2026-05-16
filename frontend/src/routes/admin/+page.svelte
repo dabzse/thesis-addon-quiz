@@ -1,7 +1,8 @@
 <script lang="ts">
+    import { Config } from '$lib/config';
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { setAuth } from '$lib/auth';
-    import { auth, authFetch } from '$lib/auth';
 
     let email = $state('');
     let password = $state('');
@@ -18,9 +19,9 @@
         error = '';
 
         try {
-            const res = await authFetch('http://localhost:8000/api/auth/login', {
+            const res = await fetch(`${Config.API_URL}/auth/login`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: Config.APP_JSON,
                 body: JSON.stringify({ email, password }),
             });
 
@@ -32,8 +33,8 @@
             }
 
             setAuth(data.user, data.token);
-            goto('/admin/dashboard');
-        } catch (e) {
+            goto(`${resolve('/')}admin/dashboard`);
+        } catch {
             error = 'Nem sikerült csatlakozni a szerverhez.';
         } finally {
             loading = false;

@@ -1,6 +1,8 @@
 <script lang="ts">
+    import { Config } from '$lib/config';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { page } from '$app/stores';
     import { authFetch } from '$lib/auth';
 
@@ -23,7 +25,7 @@
 
     onMount(async () => {
         try {
-            const res = await authFetch(`http://localhost:8000/api/admin/categories/${id}`);
+            const res = await authFetch(`${Config.API_URL}/admin/categories/${id}`);
             const data = await res.json();
             name = data.name;
             slug = data.slug;
@@ -44,9 +46,9 @@
         error = '';
 
         try {
-            const res = await authFetch(`http://localhost:8000/api/admin/categories/${id}`, {
+            const res = await authFetch(`${Config.API_URL}/admin/categories/${id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: Config.APP_JSON,
                 body: JSON.stringify({
                     name: name.trim(),
                     slug: slug.trim() || slugify(name.trim()),
@@ -59,7 +61,7 @@
                 return;
             }
 
-            goto('/admin/categories');
+            goto(`${resolve('/')}admin/categories`);
         } catch (e) {
             error = 'Nem sikerült menteni.';
         } finally {
@@ -70,7 +72,7 @@
 
 <main class="p-8 max-w-2xl mx-auto">
     <div class="flex items-center gap-4 mb-8">
-        <a href="/admin/categories" class="text-indigo-600 hover:underline text-sm">← Vissza</a>
+        <a href="{resolve('/')}admin/categories" class="text-indigo-600 hover:underline text-sm">← Vissza</a>
         <h1 class="text-2xl font-bold text-gray-800">Kategória szerkesztése</h1>
     </div>
 
@@ -79,8 +81,9 @@
     {:else}
         <div class="bg-white rounded-2xl shadow p-8 flex flex-col gap-6">
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">Név</label>
+                <label for="category-name" class="text-sm font-medium text-gray-700">Név</label>
                 <input
+                    id="category-name"
                     type="text"
                     bind:value={name}
                     oninput={() => { slug = slugify(name); }}
@@ -90,8 +93,9 @@
             </div>
 
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">Slug</label>
+                <label for="category-slug" class="text-sm font-medium text-gray-700">Slug</label>
                 <input
+                    id="category-slug"
                     type="text"
                     bind:value={slug}
                     placeholder="kategoria-neve"

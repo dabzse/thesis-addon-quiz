@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { Config } from '$lib/config';
     import { onMount } from 'svelte';
     import { authFetch } from '$lib/auth';
 
@@ -7,6 +8,7 @@
     let activeYear = $state('2026');
     let showCorrectDuring = $state('1');
     let showCorrectFinal = $state('1');
+    let showUnansweredFinal = $state('1');
     let loading = $state(true);
     let saving = $state(false);
     let error = $state('');
@@ -14,14 +16,15 @@
 
     onMount(async () => {
         try {
-            const res = await authFetch('http://localhost:8000/api/settings');
+            const res = await authFetch(`${Config.API_URL}/settings`);
             const data = await res.json();
             questionTimer = data.question_timer ?? '0';
             totalTimer = data.total_timer ?? '0';
             activeYear = data.active_year ?? '2026';
             showCorrectDuring = data.show_correct_during ?? '1';
             showCorrectFinal = data.show_correct_final ?? '1';
-        } catch (e) {
+            showUnansweredFinal = data.show_unanswered_final ?? '1';
+        } catch {
             error = 'Nem sikerült betölteni a beállításokat.';
         } finally {
             loading = false;
@@ -34,15 +37,16 @@
         success = false;
 
         try {
-            const res = await authFetch('http://localhost:8000/api/admin/settings', {
+            const res = await authFetch(`${Config.API_URL}/admin/settings`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: Config.APP_JSON,
                 body: JSON.stringify({
                     question_timer:       questionTimer,
                     total_timer:          totalTimer,
                     active_year:          activeYear,
                     show_correct_during:  showCorrectDuring,
                     show_correct_final:   showCorrectFinal,
+                    show_unanswered_final: showUnansweredFinal,
                 }),
             });
 
@@ -53,7 +57,7 @@
             }
 
             success = true;
-        } catch (e) {
+        } catch {
             error = 'Nem sikerült menteni.';
         } finally {
             saving = false;
@@ -82,11 +86,12 @@
                 <h2 class="text-lg font-semibold text-gray-700 border-b pb-2">Időzítők</h2>
 
                 <div class="flex flex-col gap-2">
-                    <label class="text-sm font-medium text-gray-700">
+                    <label for="question-timer" class="text-sm font-medium text-gray-700">
                         Kérdésenkénti időkorlát (másodperc, 0 = kikapcsolva)
                     </label>
                     <div class="flex items-center gap-4">
                         <input
+                            id="question-timer"
                             type="number"
                             bind:value={questionTimer}
                             min="0"
@@ -98,11 +103,12 @@
                 </div>
 
                 <div class="flex flex-col gap-2">
-                    <label class="text-sm font-medium text-gray-700">
+                    <label for="total-timer" class="text-sm font-medium text-gray-700">
                         Teljes kvíz időkorlát (másodperc, 0 = kikapcsolva)
                     </label>
                     <div class="flex items-center gap-4">
                         <input
+                            id="total-timer"
                             type="number"
                             bind:value={totalTimer}
                             min="0"
@@ -124,6 +130,7 @@
                     </div>
                     <button
                         onclick={() => showCorrectDuring = showCorrectDuring === '1' ? '0' : '1'}
+                        aria-label="Kérdés utáni helyes válasz megjelenítése"
                         class="shrink-0 w-11 h-6 rounded-full transition-colors relative
                             {showCorrectDuring === '1' ? 'bg-indigo-500' : 'bg-gray-200'}"
                     >
@@ -140,11 +147,29 @@
                     </div>
                     <button
                         onclick={() => showCorrectFinal = showCorrectFinal === '1' ? '0' : '1'}
+                        aria-label="Végső oldali helyes válasz megjelenítése"
                         class="shrink-0 w-11 h-6 rounded-full transition-colors relative
                             {showCorrectFinal === '1' ? 'bg-indigo-500' : 'bg-gray-200'}"
                     >
                         <div class="absolute w-4 h-4 bg-white rounded-full shadow transition-all top-1
                             {showCorrectFinal === '1' ? 'left-6' : 'left-1'}"
+                        ></div>
+                    </button>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-700">Megválaszolatlan kérdések</p>
+                        <p class="text-xs text-gray-400">Az eredmény oldalon látszanak-e az időtúllépés miatt megválaszolatlan kérdések</p>
+                    </div>
+                    <button
+                        onclick={() => showUnansweredFinal = showUnansweredFinal === '1' ? '0' : '1'}
+                        aria-label="Megválaszolatlan kérdések megjelenítése az eredményeknél"
+                        class="shrink-0 w-11 h-6 rounded-full transition-colors relative
+                            {showUnansweredFinal === '1' ? 'bg-indigo-500' : 'bg-gray-200'}"
+                    >
+                        <div class="absolute w-4 h-4 bg-white rounded-full shadow transition-all top-1
+                            {showUnansweredFinal === '1' ? 'left-6' : 'left-1'}"
                         ></div>
                     </button>
                 </div>
@@ -154,8 +179,9 @@
                 <h2 class="text-lg font-semibold text-gray-700 border-b pb-2">Általános</h2>
 
                 <div class="flex flex-col gap-2">
-                    <label class="text-sm font-medium text-gray-700">Aktív év</label>
+                    <label for="active-year" class="text-sm font-medium text-gray-700">Aktív év</label>
                     <input
+                        id="active-year"
                         type="number"
                         bind:value={activeYear}
                         min="2020"

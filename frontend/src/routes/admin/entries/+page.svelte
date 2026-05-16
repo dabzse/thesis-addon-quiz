@@ -1,6 +1,5 @@
-<a href="/admin/entries" class="text-gray-600 hover:text-indigo-600 text-sm">Nevezések</a>
-
 <script lang="ts">
+    import { Config } from '$lib/config';
     import { onMount } from 'svelte';
     import { authFetch } from '$lib/auth';
 
@@ -25,9 +24,9 @@
         loading = true;
         error = '';
         try {
-            const res = await authFetch(`http://localhost:8000/api/admin/entries?year=${selectedYear}`);
+            const res = await authFetch(`${Config.API_URL}/admin/entries?year=${selectedYear}`);
             entries = await res.json();
-        } catch (e) {
+        } catch {
             error = 'Nem sikerült betölteni a nevezéseket.';
         } finally {
             loading = false;
@@ -41,8 +40,9 @@
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-2xl font-bold text-gray-800">Nevezések</h1>
         <div class="flex items-center gap-3">
-            <label class="text-sm font-medium text-gray-700">Év:</label>
+            <label for="year-filter" class="text-sm font-medium text-gray-700">Év:</label>
             <input
+                id="year-filter"
                 type="number"
                 bind:value={selectedYear}
                 min="2020"
@@ -86,7 +86,7 @@
                             <td class="px-6 py-4 text-gray-500">{entry.category ?? 'Vegyes'}</td>
                             <td class="px-6 py-4">
                                 <span class="font-semibold text-indigo-600">{entry.score} / {entry.max_score}</span>
-                                <span class="text-gray-400 ml-1">({Math.round((entry.score / entry.max_score) * 100)}%)</span>
+                                <span class="text-gray-400 ml-1">({entry.max_score > 0 ? Math.round((entry.score / entry.max_score) * 100) : 0}%)</span>
                             </td>
                             <td class="px-6 py-4 text-gray-400 text-xs">
                                 {new Date(entry.created_at).toLocaleString('hu-HU')}

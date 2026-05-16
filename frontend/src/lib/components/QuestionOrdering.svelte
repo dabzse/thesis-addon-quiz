@@ -24,13 +24,12 @@
 
     let { answers, answered, onOrderChange, userOrder }: Props = $props();
 
-    let items: DndItem[] = $state(
-        userOrder.length > 0
-            ? userOrder
-            : answers.map(a => ({ id: a.id, answer: a.answer, correct_position: a.correct_position ?? 0 }))
-    );
+    let items: DndItem[] = $state([]);
 
     onMount(() => {
+        items = userOrder.length > 0
+            ? [...userOrder]
+            : answers.map(a => ({ id: a.id, answer: a.answer, correct_position: a.correct_position ?? 0 }));
         onOrderChange([...items]);
     });
 
@@ -44,7 +43,7 @@
     }
 
     function isCorrect(item: DndItem, index: number): boolean {
-        return item.correct_position === index + 1;
+        return Number(item.correct_position) === index + 1;
     }
 </script>
 

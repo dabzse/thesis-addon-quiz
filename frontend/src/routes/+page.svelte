@@ -1,5 +1,7 @@
 <script lang="ts">
+    import { Config } from '$lib/config';
     import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
     import { userData } from '$lib/user';
 
     let ticketNumber = $state('');
@@ -7,12 +9,39 @@
     let email = $state('');
     let error = $state('');
 
-    function start() {
+    let submitting = $state(false);
+
+    async function start() {
         if (!ticketNumber.trim()) {
             error = 'A belépőjegy sorozatszáma kötelező!';
             return;
         }
+
+        if (submitting) return;
+        submitting = true;
         error = '';
+
+        try {
+            const year = new Date().getFullYear();
+            const res = await fetch(`${Config.API_URL}/tickets/check?ticket=${ticketNumber.trim()}&year=${year}`);
+            const data = await res.json();
+
+            if (!res.ok) {
+                error = data.error || 'Hiba történt az ellenőrzés során.';
+                submitting = false;
+                return;
+            }
+
+            if (data.used) {
+                error = 'Már kitöltötted a kvízt ezzel a jeggyel!';
+                submitting = false;
+                return;
+            }
+        } catch {
+            error = 'Hiba történt az ellenőrzés során. Próbáld újra!';
+            submitting = false;
+            return;
+        }
 
         userData.set({
             ticket: ticketNumber.trim(),
@@ -20,7 +49,8 @@
             email: email.trim(),
         });
 
-        goto('/quiz');
+        submitting = false;
+        goto(resolve('/quiz'));
     }
 </script>
 
@@ -31,10 +61,11 @@
 
         <div class="flex flex-col gap-4">
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">
+                <label for="ticket" class="text-sm font-medium text-gray-700">
                     Belépőjegy sorozatszáma <span class="text-red-500">*</span>
                 </label>
                 <input
+                    id="ticket"
                     type="text"
                     bind:value={ticketNumber}
                     placeholder="pl. 123456"
@@ -43,10 +74,11 @@
             </div>
 
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">
+                <label for="name" class="text-sm font-medium text-gray-700">
                     Neved <span class="text-gray-400 text-xs">(opcionális)</span>
                 </label>
                 <input
+                    id="name"
                     type="text"
                     bind:value={name}
                     placeholder="pl. Nyilas Mihály"
@@ -55,10 +87,11 @@
             </div>
 
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">
+                <label for="email" class="text-sm font-medium text-gray-700">
                     E-mail cím <span class="text-gray-400 text-xs">(opcionális)</span>
                 </label>
                 <input
+                    id="email"
                     type="email"
                     bind:value={email}
                     placeholder="pl. dabzse@local.host"

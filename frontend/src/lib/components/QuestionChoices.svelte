@@ -23,6 +23,7 @@
         }
 
         if (!showCorrect) {
+            // Don't show correct answer — just indicate the selected option neutrally
             // Nem mutatjuk a helyes választ — csak a kijelöltet jelezzük semlegesen
             return selected.includes(answer.id)
                 ? 'bg-gray-100 border-gray-400 text-gray-700'
@@ -30,7 +31,7 @@
         }
 
         // showCorrect = true
-        if (answer.is_correct) return 'bg-green-100 border-green-400 text-green-800';
+        if (Number(answer.is_correct)) return 'bg-green-100 border-green-400 text-green-800';
         if (selected.includes(answer.id)) return 'bg-red-100 border-red-400 text-red-800';
         return 'bg-white border-gray-200 text-gray-400';
     }
@@ -44,7 +45,7 @@
             return selected.includes(answer.id) ? 'bg-gray-400' : 'bg-gray-200';
         }
 
-        if (answer.is_correct) return 'bg-green-400';
+        if (Number(answer.is_correct)) return 'bg-green-400';
         if (selected.includes(answer.id)) return 'bg-red-400';
         return 'bg-gray-200';
     }

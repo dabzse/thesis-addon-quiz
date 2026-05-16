@@ -13,19 +13,13 @@
     interface Props {
         answers: Answer[];
         answered: boolean;
-        onMatchChange: (matches: Match[], isCorrect: boolean) => void;
+        onMatchChange: (matches: Match[]) => void;
         userMatches: Match[];
     }
 
     let { answers, answered, onMatchChange, userMatches }: Props = $props();
 
-    // Minden elem (bal + jobb) egy listában, véletlenszerű sorrendben
-    const allItems = $derived(
-        [
-            ...answers.map(a => ({ id: `l-${a.id}`, text: a.answer, originalId: a.id, side: 'left' as const })),
-            ...answers.map(a => ({ id: `r-${a.id}`, text: a.match_answer ?? '', originalId: a.id, side: 'right' as const })),
-        ].sort(() => Math.random() - 0.5)
-    );
+    let allItems: { id: string; text: string; originalId: number; side: 'left' | 'right' }[] = $state([]);
 
     const pairColors = [
         'bg-blue-100 border-blue-400 text-blue-800',
@@ -35,7 +29,18 @@
         'bg-teal-100 border-teal-400 text-teal-800',
     ];
 
-    let matches: Match[] = $state(userMatches.length > 0 ? userMatches : []);
+    let matches: Match[] = $state([]);
+    import { onMount } from 'svelte';
+    onMount(() => {
+        allItems = [
+            ...answers.map(a => ({ id: `l-${a.id}`, text: a.answer, originalId: a.id, side: 'left' as const })),
+            ...answers.map(a => ({ id: `r-${a.id}`, text: a.match_answer ?? '', originalId: a.id, side: 'right' as const })),
+        ].sort(() => Math.random() - 0.5);
+
+        if (userMatches.length > 0) {
+            matches = [...userMatches];
+        }
+    });
     let selected: string | null = $state(null);
 
     function getPairIndex(itemId: string): number {
@@ -67,19 +72,6 @@
         return 'bg-white border-gray-200 text-gray-700 hover:border-indigo-300';
     }
 
-    function checkIsCorrect(currentMatches: Match[]): boolean {
-        if (currentMatches.length !== answers.length) return false;
-        return currentMatches.every(match => {
-            const leftId = match.firstId.startsWith('l-')
-                ? parseInt(match.firstId.slice(2))
-                : parseInt(match.secondId.slice(2));
-            const rightId = match.firstId.startsWith('r-')
-                ? parseInt(match.firstId.slice(2))
-                : parseInt(match.secondId.slice(2));
-            return leftId === rightId;
-        });
-    }
-
     function handleClick(itemId: string) {
         if (answered) return;
 
@@ -93,14 +85,17 @@
             return;
         }
 
+        // If either item is already matched, remove the old match
         // Ha már párosítva van valamelyik, töröljük a régi párt
         matches = matches.filter(m => m.firstId !== selected && m.secondId !== selected && m.firstId !== itemId && m.secondId !== itemId);
 
+        // Only match if items are from different sides
         // Csak akkor párosítunk ha különböző oldalról valók
         const selectedSide = selected.startsWith('l-') ? 'left' : 'right';
         const itemSide = itemId.startsWith('l-') ? 'left' : 'right';
 
         if (selectedSide === itemSide) {
+            // Same side — just switch the selection
             // Ugyanaz az oldal — csak átváltjuk a kijelölést
             selected = itemId;
             return;
@@ -108,7 +103,7 @@
 
         matches = [...matches, { firstId: selected, secondId: itemId }];
         selected = null;
-        onMatchChange(matches, checkIsCorrect(matches));
+        onMatchChange(matches);
     }
 
     function getAnsweredIcon(itemId: string): string {

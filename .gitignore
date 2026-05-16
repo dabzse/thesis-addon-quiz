@@ -1,3 +1,10 @@
 .env
+
+
+frontend/.svelte-kit/
 frontend/node_modules/
+frontend/build/
+frontend/dist/
+
+
 backend/vendor/

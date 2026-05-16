@@ -1,6 +1,8 @@
 <script lang="ts">
+    import { Config } from '$lib/config';
     import { onMount } from 'svelte';
     import { authFetch } from '$lib/auth';
+    import { resolve } from '$app/paths';
 
     interface Question {
         id: number;
@@ -19,15 +21,17 @@
         single:    'Egy helyes',
         multiple:  'Több helyes',
         truefalse: 'Igaz/Hamis',
+        ordering:  'Sorbarakós',
+        matching:  'Párosítós',
     };
 
     async function loadQuestions() {
         loading = true;
         error = '';
         try {
-            const res = await authFetch(`http://localhost:8000/api/admin/questions?year=${selectedYear}`);
+            const res = await authFetch(`${Config.API_URL}/admin/questions?year=${selectedYear}`);
             questions = await res.json();
-        } catch (e) {
+        } catch {
             error = 'Nem sikerült betölteni a kérdéseket.';
         } finally {
             loading = false;
@@ -40,11 +44,11 @@
         if (!confirm('Biztosan törlöd ezt a kérdést?')) return;
 
         try {
-            await authFetch(`http://localhost:8000/api/admin/questions/${id}`, {
+            await authFetch(`${Config.API_URL}/admin/questions/${id}`, {
                 method: 'DELETE',
             });
             questions = questions.filter(q => q.id !== id);
-        } catch (e) {
+        } catch {
             error = 'Törlés sikertelen.';
         }
     }
@@ -54,7 +58,7 @@
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-2xl font-bold text-gray-800">Kérdések</h1>
         <a
-            href="/admin/questions/new"
+            href="{resolve('/')}admin/questions/new"
             class="bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700 transition text-sm"
         >
             + Új kérdés
@@ -62,8 +66,9 @@
     </div>
 
     <div class="flex items-center gap-4 mb-6">
-        <label class="text-sm font-medium text-gray-700">Év:</label>
+        <label for="year-filter" class="text-sm font-medium text-gray-700">Év:</label>
         <input
+            id="year-filter"
             type="number"
             bind:value={selectedYear}
             min="2020"
@@ -96,7 +101,7 @@
                     </div>
                     <div class="flex gap-2 shrink-0">
                         <a
-                            href="/admin/questions/{q.id}/edit"
+                            href="{resolve('/')}admin/questions/{q.id}/edit"
                             class="text-sm text-indigo-600 hover:underline"
                         >
                             Szerkesztés

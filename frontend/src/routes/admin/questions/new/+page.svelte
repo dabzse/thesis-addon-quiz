@@ -1,7 +1,9 @@
 <script lang="ts">
+    import { Config } from '$lib/config';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
-    import { auth, authFetch } from '$lib/auth';
+    import { resolve } from '$app/paths';
+    import { authFetch } from '$lib/auth';
     import { fetchQuestionTypes } from '$lib/api';
     import type { QuestionType } from '$lib/types';
 
@@ -64,7 +66,7 @@
 
     onMount(async () => {
         const [cats, types] = await Promise.all([
-            fetch('http://localhost:8000/api/categories').then(r => r.json()),
+            fetch(`${Config.API_URL}/categories`).then(r => r.json()),
             fetchQuestionTypes(),
         ]);
         categories = cats;
@@ -89,9 +91,9 @@
         newCategoryLoading = true;
         newCategoryError = '';
         try {
-            const res = await authFetch('http://localhost:8000/api/admin/categories', {
+            const res = await authFetch(`${Config.API_URL}/admin/categories`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: Config.APP_JSON,
                 body: JSON.stringify({
                     name: newCategoryName.trim(),
                     slug: slugify(newCategoryName.trim()),
@@ -103,7 +105,7 @@
             categoryId = String(data.id);
             newCategoryName = '';
             showNewCategory = false;
-        } catch (e) {
+        } catch {
             newCategoryError = 'Nem sikerült menteni.';
         } finally {
             newCategoryLoading = false;
@@ -161,9 +163,9 @@
         error = '';
 
         try {
-            const res = await authFetch('http://localhost:8000/api/admin/questions', {
+            const res = await authFetch(`${Config.API_URL}/admin/questions`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: Config.APP_JSON,
                 body: JSON.stringify({
                     category_id: Number(categoryId),
                     question: question.trim(),
@@ -177,8 +179,8 @@
                 error = data.error ?? 'Hiba történt.';
                 return;
             }
-            goto('/admin/questions');
-        } catch (e) {
+            goto(`${resolve('/')}admin/questions`);
+        } catch {
             error = 'Nem sikerült menteni.';
         } finally {
             loading = false;
@@ -188,7 +190,7 @@
 
 <main class="p-8 max-w-2xl mx-auto">
     <div class="flex items-center gap-4 mb-8">
-        <a href="/admin/questions" class="text-indigo-600 hover:underline text-sm">← Vissza</a>
+        <a href="{resolve('/')}admin/questions" class="text-indigo-600 hover:underline text-sm">← Vissza</a>
         <h1 class="text-2xl font-bold text-gray-800">Új kérdés</h1>
     </div>
 
@@ -196,7 +198,7 @@
 
         <div class="flex flex-col gap-2">
             <div class="flex justify-between items-center">
-                <label class="text-sm font-medium text-gray-700">Kategória</label>
+                <label for="category-select" class="text-sm font-medium text-gray-700">Kategória</label>
                 <button
                     onclick={() => { showNewCategory = !showNewCategory; newCategoryError = ''; }}
                     class="text-sm text-indigo-600 hover:underline"
@@ -205,6 +207,7 @@
                 </button>
             </div>
             <select
+                id="category-select"
                 bind:value={categoryId}
                 class="border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-300"
             >
@@ -237,9 +240,10 @@
         </div>
 
         <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium text-gray-700">Év</label>
+            <label for="event-year" class="text-sm font-medium text-gray-700">Év</label>
             <input
                 type="number"
+                id="event-year"
                 bind:value={eventYear}
                 min="2020"
                 max="2099"
@@ -248,7 +252,7 @@
         </div>
 
         <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium text-gray-700">Kérdés típusa</label>
+            <span class="text-sm font-medium text-gray-700">Kérdés típusa</span>
             <div class="flex flex-wrap gap-4">
                 {#each questionTypes as qt (qt.id)}
                     <label class="flex items-center gap-2 cursor-pointer">
@@ -260,17 +264,19 @@
         </div>
 
         <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium text-gray-700">Kérdés szövege</label>
+            <label for="question-text" class="text-sm font-medium text-gray-700">Kérdés szövege</label>
             <textarea
+                id="question-text"
                 bind:value={question}
                 rows="3"
                 placeholder="Írd be a kérdést..."
                 class="border rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"
-            ></textarea>
+            >
+            </textarea>
         </div>
 
         <div class="flex flex-col gap-3">
-            <label class="text-sm font-medium text-gray-700">
+            <span class="text-sm font-medium text-gray-700">
                 {#if selectedType?.name === 'ordering'}
                     Elemek helyes sorrendben
                 {:else if selectedType?.name === 'matching'}
@@ -278,7 +284,7 @@
                 {:else}
                     Válaszok
                 {/if}
-            </label>
+            </span>
 
             {#each answers as answer, i (i)}
                 <div class="flex items-center gap-3">

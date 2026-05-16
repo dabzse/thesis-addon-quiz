@@ -10,13 +10,14 @@ use Quiz\Database\Connection;
 class Question
 {
     private PDO $db;
+    private const PARAM_YEAR = ':year';
 
     public function __construct()
     {
         $this->db = Connection::getInstance();
     }
 
-    public function getByCategory(int $categoryId, int $limit = 10, int $year = 0): array
+    public function getByCategory(int $categoryId, int $limit = 10, int $year = 0, bool $isPublic = true): array
     {
         $year = $year ?: (int) date('Y');
 
@@ -30,20 +31,20 @@ class Question
             LIMIT :limit'
         );
         $stmt->bindValue(':category_id', $categoryId, PDO::PARAM_INT);
-        $stmt->bindValue(':year', $year, PDO::PARAM_INT);
+        $stmt->bindValue(self::PARAM_YEAR, $year, PDO::PARAM_INT);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
 
         $questions = $stmt->fetchAll();
 
         foreach ($questions as &$question) {
-            $question['answers'] = $this->getAnswers((int) $question['id']);
+            $question['answers'] = $this->getAnswers((int) $question['id'], $isPublic);
         }
 
         return $questions;
     }
 
-    public function getById(int $id): array|false
+    public function getById(int $id, bool $isPublic = false): array|false
     {
         $stmt = $this->db->prepare(
             'SELECT q.id, q.category_id, q.question, q.event_year, qt.name as type
@@ -56,13 +57,13 @@ class Question
         $question = $stmt->fetch();
 
         if ($question !== false) {
-            $question['answers'] = $this->getAnswers((int) $question['id']);
+            $question['answers'] = $this->getAnswers((int) $question['id'], $isPublic);
         }
 
         return $question;
     }
 
-    public function getRandom(int $limit = 10, int $year = 0): array
+    public function getRandom(int $limit = 10, int $year = 0, bool $isPublic = true): array
     {
         $year = $year ?: (int) date('Y');
 
@@ -75,20 +76,20 @@ class Question
             ORDER BY RAND()
             LIMIT :limit'
         );
-        $stmt->bindValue(':year', $year, PDO::PARAM_INT);
+        $stmt->bindValue(self::PARAM_YEAR, $year, PDO::PARAM_INT);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
 
         $questions = $stmt->fetchAll();
 
         foreach ($questions as &$question) {
-            $question['answers'] = $this->getAnswers((int) $question['id']);
+            $question['answers'] = $this->getAnswers((int) $question['id'], $isPublic);
         }
 
         return $questions;
     }
 
-    private function getAnswers(int $questionId): array
+    private function getAnswers(int $questionId, bool $isPublic = true): array
     {
         $stmt = $this->db->prepare(
             'SELECT id, answer, is_correct, correct_position, match_answer
@@ -98,16 +99,24 @@ class Question
         );
         $stmt->execute([':question_id' => $questionId]);
 
-        return $stmt->fetchAll();
+        $answers = $stmt->fetchAll();
+
+        if ($isPublic) {
+            foreach ($answers as &$answer) {
+                unset($answer['is_correct'], $answer['correct_position']);
+            }
+        }
+
+        return $answers;
     }
 
     /**
-     * getByCategory() — kategória alapján, véletlenszerű sorrendben
-     * getById() — egy kérdés az összes válaszával
-     * getRandom() — vegyes, kategória nélküli kvíz
-     *
-    * A getAnswers() private — csak belülről hívható, a válaszok is
-    * véletlenszerű sorrendben jönnek vissza, hogy ne legyen mindig az első a helyes.
+      * getByCategory() — kategória alapján, véletlenszerű sorrendben
+      * getById() — egy kérdés az összes válaszával
+      * getRandom() — vegyes, kategória nélküli kvíz
+      *
+      * A getAnswers() private — csak belülről hívható, a válaszok is
+      * véletlenszerű sorrendben jönnek vissza, hogy ne legyen mindig az első a helyes.
     */
 
 
@@ -123,7 +132,7 @@ class Question
             WHERE q.event_year = :year
             ORDER BY c.name ASC, q.id ASC'
         );
-        $stmt->bindValue(':year', $year, PDO::PARAM_INT);
+        $stmt->bindValue(self::PARAM_YEAR, $year, PDO::PARAM_INT);
         $stmt->execute();
 
         return $stmt->fetchAll();
@@ -163,7 +172,7 @@ class Question
             $stmt->execute([
                 ':question_id'      => $questionId,
                 ':answer'           => $answer['text'],
-                ':is_correct'       => $answer['is_correct'] ?? false ? 1 : 0,
+                ':is_correct'       => ($answer['is_correct'] ?? false) ? 1 : 0,
                 ':correct_position' => $answer['correct_position'] ?? null,
                 ':match_answer'     => $answer['match_answer'] ?? null,
             ]);
@@ -197,7 +206,7 @@ class Question
             $stmt->execute([
                 ':question_id'      => $id,
                 ':answer'           => $answer['text'],
-                ':is_correct'       => $answer['is_correct'] ?? false ? 1 : 0,
+                ':is_correct'       => ($answer['is_correct'] ?? false) ? 1 : 0,
                 ':correct_position' => $answer['correct_position'] ?? null,
                 ':match_answer'     => $answer['match_answer'] ?? null,
             ]);

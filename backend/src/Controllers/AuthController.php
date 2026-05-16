@@ -7,7 +7,7 @@ namespace Quiz\Controllers;
 use Quiz\Models\User;
 use Quiz\Models\Session;
 
-class AuthController
+class AuthController extends BaseController
 {
     private User $user;
     private Session $session;
@@ -20,7 +20,7 @@ class AuthController
 
     public function login(): void
     {
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = $this->getJsonInput();
 
         if (empty($data['email']) || empty($data['password'])) {
             $this->respond(['error' => 'Hiányzó adatok.'], 400);
@@ -82,23 +82,6 @@ class AuthController
         ]);
     }
 
-    public function getBearerToken(): ?string
-    {
-        $headers = getallheaders();
-        $auth = $headers['Authorization'] ?? $headers['authorization'] ?? '';
-
-        if (str_starts_with($auth, 'Bearer ')) {
-            return substr($auth, 7);
-        }
-
-        return null;
-    }
-
-    private function respond(array $data, int $statusCode = 200): void
-    {
-        http_response_code($statusCode);
-        echo json_encode($data);
-    }
 
     public function validateToken(): bool
     {
